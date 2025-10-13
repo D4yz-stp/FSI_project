@@ -4,7 +4,7 @@ Comecei por criar uma pasta partilhada no SeedLabs, coloquei no directorio /medi
 
 De seguida eu escrevi "printenv PWD" para poder ver as variaveis globais, mas quando fiz o mesmo codigo na pasta /media/Environment_Variable_and_SetUID/Labsetup não deu o mesmo resultado.
 
-### 2.2
+## 2.2
 O objetivo da task é verificar se as variáveis de ambiente do processo pai são herdadas pelo processo filho após a chamada de fork().
 
 Decidi então seguir os passos do guião
@@ -91,9 +91,9 @@ OLDPWD=/media/sf_Environment_Variable_and_SetUID
 "
 
 --- 
-### 2.3
+## 2.3
 
-step 1
+### step 1
 O objetivo dessa tarefa é analisar o que acontece com as variáveis de ambiente quando um novo programa é executado com execve(), queremos saber se elas são herdadas pelo programa carregado.
 
 Seguindo os passos, executei o ficheiro myenv.c com "gcc myenv.c" que retornou um a.out, que logo em seguida fiz "a.out > file"
@@ -102,18 +102,18 @@ Seguindo os passos, executei o ficheiro myenv.c com "gcc myenv.c" que retornou u
 
 Obtive um ficheiro vazio
 
-step 2
+### step 2
 
 Mudei a linha "execve("/usr/bin/env", argv, NULL);  " para "execve("/usr/bin/env", argv, environ);" E executei os mesmos comandos de antes
 
-step 3
+### step 3
 
 Notei que obtive literalmente as mesmas variaveis globais do processo pai( n houve uma criaçao de processo filho, pai é usado apenas como referencia) 
 
 Portanto concluimos que o execve() substitui o programa atual sem criar um novo processo e apenas transmite as variáveis de ambiente se estas forem explicitamente passadas como argumento. Caso contrário, o novo programa é executado com um ambiente vazio.
 
 ---
-### 2.4
+## 2.4
 
 O objetivo desta tarefa é analisar o que acontece com as variáveis de ambiente quando um novo processo é executado através da função `system()`,  diferente da `execve()`, que não cria um processo filho, mas apenas muda a função o processo atual. A função system() executa o comando por meio de um novo terminal `(/bin/sh -c command)`, criando assim um novo processo filho. Queremos verificar se as variáveis de ambiente do processo original são herdadas por esse novo processo.
 
@@ -128,4 +128,45 @@ return 0 ;
 ```
 
 Ao executar o comando com `gc myenv.c -o myenvsys` e `./myenvsys > file`, pude constar que a função `system()` não troca o programa que está rodando; em vez disso, ela cria um processo filho para rodar um novo terminal `(/bin/sh)`. Como `system()` usa internamente `execl()`, que por sua vez chama `execve()` com o mesmo conjunto de variáveis do processo pai, o processo filho acaba herdando automaticamente todas as variáveis de ambiente.
+
+---
+## 2.5 
+
+O objetivo desta tarefa é analisar como as variáveis de ambiente são tratadas quando um programa Set-UID é executado. Especificamente, queremos ver se as variáveis de ambiente do usuário que executa o programa são herdadas pelo processo do Set-UID, considerando que ele assume privilégios do proprietário (ex: root).
+
+### step 1
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+extern char **environ;
+int main()
+{
+int i = 0;
+while (environ[i] != NULL) {
+printf("%s\n", environ[i]);
+i++;
+}
+}
+```
+
+### step 2
+
+Agora, compilei o codigo com `gcc foo.c -o foo`, e usei esses comandos logo em seguida `sudo chown root foo` ( mudei o proprietário para root ), e `sudo chmod 4755 foo` ( tornei o programa Set-UID )
+
+Tudo isso feito no root terminal que acessei depois de usar  `sudo -i`
+
+### step 3
+
+Agora tive de executar esses comandos no terminal
+
+1. `export PATH=/home/seed/bin:$PATH` ( definir o path ) 
+2. `export LD_LIBRARY_PATH=/home/seed/lib` ( definir o lb library path ) 
+3. `export MY_VAR="banaNa"` 
+
+Verifiquei o file depois do comando `./foo > file` e para a minha surpresa, foi possível ver que todas as variáveis definidas pelo usuário aparecem com os valores atualizados no file. No meu teste eu vi todas as variáveis que defini (`MY_VAR`, `LD_LIBRARY_PATH`, `PATH`) aparecerem no programa Set‑UID, mas senti dúvidas quanto a esse exercício. Depois de pesquisar, descobri que isso não é sempre o comportamento padrão, em muitas distribuições/configurações variáveis potencialmente perigosas são filtradas por razões de segurança. Assim, embora eu tenha visto todas as minhas variáveis nesse ambiente, o resultado pode variar conforme a versão da libc, flags do kernel (securebits), políticas do sudo, ou como o binário foi invocado.
+
+---
+## 2.6
+
 
