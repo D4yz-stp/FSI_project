@@ -193,19 +193,19 @@ eu começei então por compilar o seis.c e logo em seguida o transformei em um f
 Eu então compilei o "bad_code.c" assim -> "gcc -o ls bad_code.c" e em seguida defini/alterei variáveis do ambiente com `export PATH=/home/seed:$PATH` 
 E com isso quando executei o seis, com `./seis` Ele retornou ->
 ```c
-`[10/13/25]seed@VM:~/Documents$ ./seis
+[10/13/25]seed@VM:~/Documents$ ./seis
 Muh ha ha ha ha!!
 ```
 Então, sim eu consegui executar o codigo malicioso.
 No entanto, embora o binário malicioso ( bad_code.c -> ls ) tenha sido executado (vejo o output "Muh ha ha ha ha!!"), não apareceu a mensagem "I have root privilege!". Isto indica que, no meu ambiente, o processo malicioso não correu com EUID = 0.
 Decidi adentrar na internet e buscar entender porquê, e vi essa explicação que faz sentido 
 
-"Likely reasons:
-
-The shell called by system() (e.g., /bin/sh — often dash) may drop the EUID as a mitigation;
-
-The target program might have already reduced its privileges before calling system(), so the child inherits limited rights;
-
-Some filesystems (e.g., vboxsf) do not respect the set‑uid bit, so the user’s executable doesn’t gain the owner’s privileges.
-
-In other words: the PATH trick worked to run the user’s binary, but these limitations prevented privilege escalation in this test."
+>Likely reasons:
+>
+>The shell called by system() (e.g., /bin/sh — often dash) may drop the EUID as a mitigation;
+>
+>The target program might have already reduced its privileges before calling system(), so the child inherits limited rights;
+>
+>Some filesystems (e.g., vboxsf) do not respect the set‑uid bit, so the user’s executable doesn’t gain the owner’s privileges.
+>
+>In other words: the PATH trick worked to run the user’s binary, but these limitations prevented privilege escalation in this test."
