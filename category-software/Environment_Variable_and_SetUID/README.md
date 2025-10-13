@@ -327,6 +327,7 @@ E obtive isto
 fd is 3
 $
 ```
+Só um pormenor, esse 3 é porque o sistema já usa 0(stdin), 1(stdout), 2(stderr). O primeiro open() retorna o próximo FD livre, normalmente 3, e &3 seria o enderenço o do descritor.
 Não foi só isso, porque é na verdade um terminal de um novo programa,
 Tentei `rm -f /etc/zzz`, mas deu 
 ```c
@@ -334,7 +335,7 @@ $ rm -f /etc/zzz
 rm: cannot remove '/etc/zzz': Permission denied
 ```
 
-Decidi então usar o fd para certificar que não temos mais vulnerabilidades, usei o comando `cat 'linha maliciosa' > &3`, e para a minha surpresa funcionou 
+Decidi então usar o fd para certificar que não temos mais vulnerabilidades, usei o comando `cat 'linha maliciosa\n' > &3`, e para a minha surpresa funcionou 
 ```c
 $ sudo cat /etc/zzz
 linha maliciosa
