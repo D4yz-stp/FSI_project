@@ -248,3 +248,86 @@ int main(int argc, char *argv[])
 ```
 
 Compilei este ficheiro com `gcc catall.c -o catall`, ele tem 2 alternativas para executar um novo programa, com `system` ou `execve`, mas como foi-me pedido para apenas fazer o step 1, eu vou explorar a vulnerabilidade do `system()`, pois também diferente do execve, o `system` executa o comando em uma shell
+
+---
+
+## 2.9 
+
+O objetivo desta tarefa é testar a vulnerabilidade de *capability leaking*, que é quando um programa Set-UID drop ao UID, só que nós temos de investigar de ele ainda assim deixa previlégios que podem ser usados como vulnerabilidade.
+
+Temos esse codigo que é um programa Set-UID mas que perdi o seu UID com `setuid(getuid());`
+```c
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+
+void main()
+{
+  int fd;
+  char *v[2];
+
+  /* Assume that /etc/zzz is an important system file,
+   * and it is owned by root with permission 0644.
+   * Before running this program, you should create
+   * the file /etc/zzz first. */
+  fd = open("/etc/zzz", O_RDWR | O_APPEND);        
+  if (fd == -1) {
+     printf("Cannot open /etc/zzz\n");
+     exit(0);
+  }
+
+  // Print out the file descriptor value
+  printf("fd is %d\n", fd);
+
+  // Permanently disable the privilege by making the
+  // effective uid the same as the real uid
+  setuid(getuid());                                
+
+  // Execute /bin/sh
+  v[0] = "/bin/sh"; v[1] = 0;
+  execve(v[0], v, 0);                             
+}
+```
+
+Começei compilando esse codigo `gcc cap_leak.c -o cap_leak`, logo em seguida fiz-lá propriedade do root e a transformei em um Set-UID com esses comandos
+
+1. `sudo chown root cap_leak`
+2. `sudo chmod4755 cap_leak`
+
+Agora, como é dito no codigo, não existe um ficheiro importante chamado "zzz" no caminho /etc, então vou ter de criar um ficheiro de texto "zzz" para servir só de teste.
+
+>* Before running this program, you should create
+>   * the file /etc/zzz first. */
+
+Criei esse file com `sudo touch /etc/zzz`, mas agora tenho de faze-lo ser propriedade do root e dar-lhe uma permissão específica
+
+>/* Assume that /etc/zzz is an important system file,
+>   * and it is owned by root with permission 0644.
+
+E com isso eu já estava pronto para executar o cap_leak, e assim fiz com o comando `./cap_leak`
+
+E obtive isto
+
+```c
+[10/13/25]seed@VM:~/Documents$ ./cap_leak
+fd is 3
+$
+```
+N foi só isso, porque é na verdade um terminal de um novo programa,
+Eu tentei `rm -f /etc/zzz`, mas deu 
+```c
+$ rm -f /etc/zzz
+rm: cannot remove '/etc/zzz': Permission denied
+```
+
+Decidi então usar o fd para certificar que não temos mais vulnerabilidades, usei o comando `cat 'linha maliciosa' > &3`, e para a minha surpresa funcionou 
+```c
+$ sudo cat /etc/zzz
+linha maliciosa
+linha maliciosa
+$ 
+```
+Ou seja, apesar de eu não ter autorização de root em vários comando, eu consego adicionar informações no ficheiro /etc/zzz que é do root com uma permissão específica só porque eu tinha o endereço do fd, então é seguro afirmar que o novo programa herdou o esse descritor do programa inicial.
+
+Em suma, o teste demonstrou a vulnerabilidade de *capability leaking*, eu vi que, embora o processo tenha revogado o root com setuid(getuid()), ele deixou para trás o descritor de ficheiro (FD) aberto para o /etc/zzz. O shell que o programa executou simplesmente herdou esse FD "vazado", e foi assim que consegui escrever no ficheiro protegido. Ou seja, setuid() sozinho não basta; é preciso limpar todos os recursos privilegiados (fechar os FDs) para garantir a segurança.
