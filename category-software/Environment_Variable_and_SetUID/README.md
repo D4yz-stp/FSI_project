@@ -247,7 +247,20 @@ int main(int argc, char *argv[])
 }
 ```
 
-Compilei este ficheiro com `gcc catall.c -o catall`, ele tem 2 alternativas para executar um novo programa, com `system` ou `execve`, mas como foi-me pedido para apenas fazer o step 1, eu vou explorar a vulnerabilidade do `system()`, pois também diferente do execve, o `system` executa o comando em uma shell
+Compilei este ficheiro com `gcc catall.c -o catall`, ele tem 2 alternativas para executar um novo programa, com `system` ou `execve`, mas como foi-me pedido para apenas fazer o step 1, eu vou explorar a vulnerabilidade do `system()`, pois também diferente do execve, o `system` executa o comando em uma shell.
+
+Esse foi bem ráido e direto ao ponto, comecei por compilar o catall.c com `gcc catall.c -o catall`, também o fiz propriedade do root e o transformei em um programa Set-UID com
+
+1. `sudo chown root catall`
+2. `sudo chmod 4755 catall`
+
+Decide então resolver isso rápido, o command tem uma parte estática e uma parte que é variável, a estática é `/bin/cat`, que representam
+
+1. /bin → vem de “binary”, e contém comandos básicos necessários para o sistema funcionar.
+
+2. cat → é um comando no linux.
+
+E a parte que é variável sou eu que decido, então pensei em criar um ficheiro de texto chamado B4na que tivesse uma frase qualquer dentro só para saber se funcionou o cat, e logo em seguida eu tentava o apagar, se ele desaparece quer dizer que eu consegui explorar a vulnerabilidade do programa, no final eu pensei em `./catall "B4na; /bin/rm -f B4na"`, que funcionou, escreveu oque tinha dentro do B4na, e no final deletou o ficheiro texto do directório.
 
 ---
 
@@ -293,7 +306,7 @@ void main()
 Começei compilando esse codigo `gcc cap_leak.c -o cap_leak`, logo em seguida fi-lo propriedade do root e a transformei em um Set-UID com esses comandos
 
 1. `sudo chown root cap_leak`
-2. `sudo chmod4755 cap_leak`
+2. `sudo chmod 4755 cap_leak`
 
 Agora, como é dito no codigo, não existe um ficheiro importante chamado "zzz" no caminho /etc, então vou ter de criar um ficheiro de texto "zzz" para servir só de teste.
 
