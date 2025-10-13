@@ -209,3 +209,42 @@ Decidi adentrar na internet e buscar entender porquê, e vi essa explicação qu
 >Some filesystems (e.g., vboxsf) do not respect the set‑uid bit, so the user’s executable doesn’t gain the owner’s privileges.
 >
 >In other words: the PATH trick worked to run the user’s binary, but these limitations prevented privilege escalation in this test."
+
+---
+
+## 2.8
+
+### step 1
+
+O objetivo desta tarefa é compreender os problemas que o `system()` tem quanto á criação de terminais/shell para executar programas, mas o foco principal é explorar a vulnerabilidade de um programa *Set-UID* em ficheiros que são non-writable
+
+```c
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int main(int argc, char *argv[])
+{
+  char *v[3];
+  char *command;
+
+  if(argc < 2) {
+    printf("Please type a file name.\n");
+    return 1;
+  }
+
+  v[0] = "/bin/cat"; v[1] = argv[1]; v[2] = NULL;
+  // /bin/cat/ls
+  command = malloc(strlen(v[0]) + strlen(v[1]) + 2);
+  sprintf(command, "%s %s", v[0], v[1]);
+
+  // Use only one of the followings.
+  system(command);
+  // execve(v[0], v, NULL);
+
+  return 0 ;
+}
+```
+
+Compilei este ficheiro com `gcc catall.c -o catall`, ele tem 2 alternativas para executar um novo programa, com `system` ou `execve`, mas como foi-me pedido para apenas fazer o step 1, eu vou explorar a vulnerabilidade do `system()`, pois também diferente do execve, o `system` executa o comando em uma shell
