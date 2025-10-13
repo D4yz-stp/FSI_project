@@ -12,7 +12,7 @@ Decidi então seguir os passos do guião
 Compilei o myprintenv.c com "gcc myprintenv.c" que deu um a.out, que logo a seguir fiz "a.out > file" para poder ver as variaveis globais, consegui então o retorno que havia tido quando fiz printenv PWD no directorio inicial.
 
 Agora vou colocar o printenv() do processo filho do myprintenv.c em comentario, e descomentar o printenv.c do processo pai.
-Pude reparar que os 2 retornaram literalmente a mesma coisa quanto as variaveis ambientais!
+Pude reparar que os 2 retornaram literalmente a mesma coisa quanto às variáveis de ambiente!
 
 <img width="343" height="302" alt="{AFA5A446-B36F-47F0-95D9-2D8EF8851F49}" src="https://github.com/user-attachments/assets/7a9271e4-7dcf-4141-8f50-84ca74816c16" />
 
@@ -115,7 +115,7 @@ Portanto concluimos que o execve() substitui o programa atual sem criar um novo 
 ---
 ## 2.4
 
-O objetivo desta tarefa é analisar o que acontece com as variáveis de ambiente quando um novo processo é executado através da função `system()`,  diferente da `execve()`, que não cria um processo filho, mas apenas muda a função o processo atual. A função system() executa o comando por meio de um novo terminal `(/bin/sh -c command)`, criando assim um novo processo filho. Queremos verificar se as variáveis de ambiente do processo original são herdadas por esse novo processo.
+O objetivo desta tarefa é analisar o que acontece com as variáveis de ambiente quando um novo processo é executado através da função `system()`. Diferente da execve(), que não cria um processo filho mas apenas muda o processo atual. A função system() executa o comando por meio de um novo terminal `(/bin/sh -c command)`, criando assim um novo processo filho. Queremos verificar se as variáveis de ambiente do processo original são herdadas por esse novo processo.
 
 ```c
 #include <stdio.h>
@@ -127,7 +127,7 @@ return 0 ;
 }
 ```
 
-Ao executar o comando com `gc myenv.c -o myenvsys` e `./myenvsys > file`, pude constar que a função `system()` não troca o programa que está rodando; em vez disso, ela cria um processo filho para rodar um novo terminal `(/bin/sh)`. Como `system()` usa internamente `execl()`, que por sua vez chama `execve()` com o mesmo conjunto de variáveis do processo pai, o processo filho acaba herdando automaticamente todas as variáveis de ambiente.
+Ao executar o comando com `gc myenv.c -o myenvsys` e `./myenvsys > file`, pude constatar que a função `system()` não troca o programa que está rodando; em vez disso, ela cria um processo filho para correr um novo terminal `(/bin/sh)`. Como `system()` usa internamente `execl()`, que por sua vez chama `execve()` com o mesmo conjunto de variáveis do processo pai, o processo filho acaba por herdar automaticamente todas as variáveis de ambiente.
 
 ---
 ## 2.5 
@@ -164,7 +164,7 @@ Agora tive de executar esses comandos no terminal
 2. `export LD_LIBRARY_PATH=/home/seed/lib` ( definir o lb library path ) 
 3. `export MY_VAR="banaNa"` 
 
-Verifiquei o file depois do comando `./foo > file` e para a minha surpresa, foi possível ver que todas as variáveis definidas pelo usuário aparecem com os valores atualizados no file. No meu teste eu vi todas as variáveis que defini (`MY_VAR`, `LD_LIBRARY_PATH`, `PATH`) aparecerem no programa Set‑UID, mas senti dúvidas quanto a esse exercício. Depois de pesquisar, descobri que isso não é sempre o comportamento padrão, em muitas distribuições/configurações variáveis potencialmente perigosas são filtradas por razões de segurança. Assim, embora eu tenha visto todas as minhas variáveis nesse ambiente, o resultado pode variar conforme a versão da libc, flags do kernel (securebits), políticas do sudo, ou como o binário foi invocado.
+Verifiquei o file depois do comando `./foo > file` e para a minha surpresa, foi possível ver que todas as variáveis definidas pelo usuário aparecem com os valores atualizados no file. No meu teste vi todas as variáveis que defini (`MY_VAR`, `LD_LIBRARY_PATH`, `PATH`) aparecerem no programa Set‑UID, mas senti dúvidas quanto a esse exercício. Depois de pesquisar, descobri que isso não é sempre o comportamento padrão, em muitas distribuições/configurações variáveis potencialmente perigosas são filtradas por razões de segurança. Assim, embora eu tenha visto todas as minhas variáveis nesse ambiente, o resultado pode variar conforme a versão da libc, flags do kernel (securebits), políticas do sudo, ou como o binário foi invocado.
 
 ---
 ## 2.6
@@ -178,8 +178,8 @@ system("ls");
 return 0;
 }
 ```
-Esse é o "seis.c" que vou usar para ser a vítima, 
-e esse 
+Este é o "seis.c" que vou usar para ser a vítima, 
+e este
 ```c
 int main() {
     printf("Muh ha ha ha ha!!\n");
@@ -188,9 +188,9 @@ int main() {
 }
 ```
 É o "bad_code.c" que vai ser o ficheiro malicioso, 
-eu começei então por compilar o seis.c e logo em seguida o transformei em um ficheiro root e Set-UID
+Começei então por compilar o seis.c e logo em seguida o transformei em um ficheiro root e Set-UID
 
-Eu então compilei o "bad_code.c" assim -> "gcc -o ls bad_code.c" e em seguida defini/alterei variáveis do ambiente com `export PATH=/home/seed:$PATH` 
+Compilei o "bad_code.c" assim -> "gcc -o ls bad_code.c" e em seguida defini/alterei variáveis do ambiente com `export PATH=/home/seed:$PATH` 
 E com isso quando executei o seis, com `./seis` Ele retornou ->
 ```c
 [10/13/25]seed@VM:~/Documents$ ./seis
@@ -216,7 +216,7 @@ Decidi adentrar na internet e buscar entender porquê, e vi essa explicação qu
 
 ### step 1
 
-O objetivo desta tarefa é compreender os problemas que o `system()` tem quanto á criação de terminais/shell para executar programas, mas o foco principal é explorar a vulnerabilidade de um programa *Set-UID* em ficheiros que são non-writable
+O objetivo desta tarefa é compreender os problemas que o `system()` tem quanto à criação de terminais/shell para executar programas, mas o foco principal é explorar a vulnerabilidade de um programa *Set-UID* em ficheiros que são non-writable
 
 ```c
 #include <unistd.h>
@@ -290,7 +290,7 @@ void main()
 }
 ```
 
-Começei compilando esse codigo `gcc cap_leak.c -o cap_leak`, logo em seguida fiz-lá propriedade do root e a transformei em um Set-UID com esses comandos
+Começei compilando esse codigo `gcc cap_leak.c -o cap_leak`, logo em seguida fi-lo propriedade do root e a transformei em um Set-UID com esses comandos
 
 1. `sudo chown root cap_leak`
 2. `sudo chmod4755 cap_leak`
@@ -314,8 +314,8 @@ E obtive isto
 fd is 3
 $
 ```
-N foi só isso, porque é na verdade um terminal de um novo programa,
-Eu tentei `rm -f /etc/zzz`, mas deu 
+Não foi só isso, porque é na verdade um terminal de um novo programa,
+Tentei `rm -f /etc/zzz`, mas deu 
 ```c
 $ rm -f /etc/zzz
 rm: cannot remove '/etc/zzz': Permission denied
@@ -328,6 +328,6 @@ linha maliciosa
 linha maliciosa
 $ 
 ```
-Ou seja, apesar de eu não ter autorização de root em vários comando, eu consego adicionar informações no ficheiro /etc/zzz que é do root com uma permissão específica só porque eu tinha o endereço do fd, então é seguro afirmar que o novo programa herdou o esse descritor do programa inicial.
+Ou seja, apesar de eu não ter autorização de root em vários comando, eu consigo adicionar informações no ficheiro /etc/zzz que é do root com uma permissão específica só porque eu tinha o endereço do fd, então é seguro afirmar que o novo programa herdou o esse descritor do programa inicial.
 
 Em suma, o teste demonstrou a vulnerabilidade de *capability leaking*, eu vi que, embora o processo tenha revogado o root com setuid(getuid()), ele deixou para trás o descritor de ficheiro (FD) aberto para o /etc/zzz. O shell que o programa executou simplesmente herdou esse FD "vazado", e foi assim que consegui escrever no ficheiro protegido. Ou seja, setuid() sozinho não basta; é preciso limpar todos os recursos privilegiados (fechar os FDs) para garantir a segurança.
