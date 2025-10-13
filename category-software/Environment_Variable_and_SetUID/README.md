@@ -1,8 +1,10 @@
+# Guide
+
 Comecei por criar uma pasta partilhada no SeedLabs, coloquei no directorio /media.
 
 De seguida eu escrevi "printenv PWD" para poder ver as variaveis globais, mas quando fiz o mesmo codigo na pasta /media/Environment_Variable_and_SetUID/Labsetup não deu o mesmo resultado.
 
-2.2
+### 2.2
 O objetivo da task é verificar se as variáveis de ambiente do processo pai são herdadas pelo processo filho após a chamada de fork().
 
 Decidi então seguir os passos do guião
@@ -88,11 +90,11 @@ _=./a.out
 OLDPWD=/media/sf_Environment_Variable_and_SetUID
 "
 
-
-2.3
+--- 
+### 2.3
 
 step 1
-O objetivo dessa task é analisar o que acontece com as variáveis de ambiente quando um novo programa é executado com execve(), verificando se elas são herdadas pelo programa carregado.
+O objetivo dessa tarefa é analisar o que acontece com as variáveis de ambiente quando um novo programa é executado com execve(), queremos saber se elas são herdadas pelo programa carregado.
 
 Seguindo os passos, executei o ficheiro myenv.c com "gcc myenv.c" que retornou um a.out, que logo em seguida fiz "a.out > file"
 
@@ -110,4 +112,20 @@ Notei que obtive literalmente as mesmas variaveis globais do processo pai( n hou
 
 Portanto concluimos que o execve() substitui o programa atual sem criar um novo processo e apenas transmite as variáveis de ambiente se estas forem explicitamente passadas como argumento. Caso contrário, o novo programa é executado com um ambiente vazio.
 
+---
+### 2.4
+
+O objetivo desta tarefa é analisar o que acontece com as variáveis de ambiente quando um novo processo é executado através da função `system()`,  diferente da `execve()`, que não cria um processo filho, mas apenas muda a função o processo atual. A função system() executa o comando por meio de um novo terminal `(/bin/sh -c command)`, criando assim um novo processo filho. Queremos verificar se as variáveis de ambiente do processo original são herdadas por esse novo processo.
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+int main()
+{
+system("/usr/bin/env");
+return 0 ;
+}
+```
+
+Ao executar o comando com `gc myenv.c -o myenvsys` e `./myenvsys > file`, pude constar que a função `system()` não troca o programa que está rodando; em vez disso, ela cria um processo filho para rodar um novo terminal `(/bin/sh)`. Como `system()` usa internamente `execl()`, que por sua vez chama `execve()` com o mesmo conjunto de variáveis do processo pai, o processo filho acaba herdando automaticamente todas as variáveis de ambiente.
 
