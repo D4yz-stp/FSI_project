@@ -507,8 +507,10 @@ This laboratory demonstrated in a practical way how environment variables and Se
 - Close all privileged file descriptors before revoking privileges
 - Avoid setuid binaries when possible
 
-Divaldo Dias (up202309923up.pt)
-Francisco Leiras (up202307823up.pt)
-Bárbara Gomes (up202305089@up.pt)
+# Authorship Details
+
+### Divaldo Dias (up202309923@up.pt)
+### Francisco Leiras (up202307823@up.pt)
+### Bárbara Gomes (up202305089@up.pt)
 
 All work referenced the SEED Lab materials by Wenliang Du and used the supplied code examples.
