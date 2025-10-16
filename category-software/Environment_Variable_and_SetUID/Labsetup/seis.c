@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
+
 int main()
 {
-system("/usr/bin/env");
-return 0 ;
+system("ls");
+return 0;
 }

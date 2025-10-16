@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
   }
 
   v[0] = "/bin/cat"; v[1] = argv[1]; v[2] = NULL;
-
+  // /bin/cat/ls
   command = malloc(strlen(v[0]) + strlen(v[1]) + 2);
   sprintf(command, "%s %s", v[0], v[1]);
 

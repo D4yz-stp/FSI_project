@@ -23,8 +23,7 @@ Comecei por criar uma pasta partilhada no SeedLabs, colocada no diretório `/med
 - Any variables exported become accessible to processes started by the shell
 - Unsetting a variable removes it immediately from the current shell environment
 
-<foto task="1">
-
+![Task 1](images/Task1_1.jpg)
 ---
 
 ## Task 2 - Inheriting Environment Variables
@@ -42,6 +41,8 @@ gcc myprintenv.c
 Consegui então o retorno que havia tido quando fiz `printenv PWD` no diretório inicial.
 
 Coloquei o `printenv()` do processo filho em comentário e descomentei o `printenv()` do processo pai. Pude reparar que os dois retornaram literalmente a mesma coisa quanto às variáveis de ambiente.
+
+![Task 2 - Part 1](images/Task2_1.png)
 
 ### Resultado:
 
@@ -65,13 +66,16 @@ HOME=/home/seed
 - This confirms that when a child process is created using `fork()`, it inherits all environment variables from the parent process
 - The child process starts with a copy of the parent's environment
 
-<foto task="2">
+
+![Task 2 - Part 2](images/Task2_2.jpg)
 
 ---
 
 ## Task 3 - Environment Variables and execve()
 
 **Objetivo:** Analisar o que acontece com as variáveis de ambiente quando um novo programa é executado com `execve()`.
+
+![Task 3 - Part 1](images/Task3_1.png)
 
 ### Step 1
 
@@ -109,7 +113,7 @@ O `execve()` substitui o programa atual sem criar um novo processo e apenas tran
 - When `execve()` is called with `environ`, the new program inherits all environment variables
 - Environment variable inheritance with `execve()` is explicitly controlled by the third argument; it's not automatic
 
-<foto task="3">
+![Task 3 - Part 2](images/Task3_2.jpg)
 
 ---
 
@@ -143,7 +147,7 @@ A função `system()` não troca o programa que está rodando; em vez disso, ela
 - The executed command (`/usr/bin/env`) has access to the same environment variables as the program that called `system()`
 - `system()` implicitly propagates environment variables, making it different from `execve()` in terms of inheritance
 
-<foto task="4">
+![Task 4](images/Task4_1.jpg)
 
 ---
 
@@ -201,7 +205,7 @@ Descobri que esse comportamento não é sempre padrão. Em muitas distribuiçõe
 - Variables that could modify program behavior are usually sanitized
 - The operating system prevents Set-UID programs from blindly inheriting all environment variables to avoid privilege escalation risks
 
-<foto task="5">
+![Task 5](images/Task5_1.jpg)
 
 ---
 
@@ -246,6 +250,8 @@ Muh ha ha ha ha!!
 
 O binário malicioso foi executado, mas **não** apareceu a mensagem "I have root privilege!". Isto indica que o processo malicioso não correu com EUID = 0.
 
+<img src="images/Task6_1.jpg" width="70%">
+
 ### Razões prováveis:
 - O shell chamado por `system()` (dash) pode ter revogado o EUID como medida de segurança
 - Alguns filesystems (ex: vboxsf) não respeitam o bit set-uid
@@ -253,6 +259,8 @@ O binário malicioso foi executado, mas **não** apareceu a mensagem "I have roo
 ### Resultado com zsh (lab-only):
 
 Após apontar `/bin/sh` para `zsh` temporariamente, o comando `./atc6` produziu `whoami: root` — o código malicioso `~/ls` executou com privilégios root (escalação bem-sucedida).
+
+<img src="images/Task6_2.jpg" width="70%">
 
 ### Key Observations:
 - `sudo ls -l ./atc6` shows `-rwsr-xr-x` (setuid root); `which ls` -> `/home/seed/ls` (malicious file on PATH)
@@ -266,14 +274,16 @@ Após apontar `/bin/sh` para `zsh` temporariamente, o comando `./atc6` produziu 
 - Use `execve()` with absolute paths
 - Sanitize or reset PATH and unset `LD_*`
 - Avoid setuid binaries when possible
-
-<foto task="6">
+  
+<img src="images/Task6_3.jpg" width="70%">
 
 ---
 
 ## Task 7 - The LD_PRELOAD Environment Variable and Set-UID Programs
 
 **Objetivo:** Explorar como `LD_PRELOAD` afeta programas regulares e Set-UID.
+
+<img src="images/Task7_1.jpg" width="70%">
 
 ### Resultados:
 
@@ -284,12 +294,15 @@ Após apontar `/bin/sh` para `zsh` temporariamente, o comando `./atc6` produziu 
 3. **Set-UID root program, root user with LD_PRELOAD set:** `LD_PRELOAD` works again; Root can preload the library; Output: "I am not sleeping!"
 
 4. **Set-UID user1 program, different non-root user:** `LD_PRELOAD` ignored again; Non-owner cannot inject library into Set-UID binary; Output: normal behavior
+   
+<img src="images/Task7_2.jpg" width="70%">
 
 ### Conclusão:
 
 `LD_PRELOAD` is ignored for Set-UID programs unless run by the file owner (or root) to prevent privilege escalation.
 
-<foto task="7">
+
+<img src="images/Task7_3.jpg" width="70%">
 
 ---
 
@@ -336,6 +349,8 @@ sudo chown root catall
 sudo chmod 4755 catall
 ```
 
+<img src="images/Task8_1.jpg" width="70%">
+
 Criei um ficheiro de texto `B4na` com conteúdo de teste. Explorei a vulnerabilidade com:
 ```bash
 ./catall "B4na; /bin/rm -f B4na"
@@ -344,6 +359,9 @@ Criei um ficheiro de texto `B4na` com conteúdo de teste. Explorei a vulnerabili
 ### Resultado:
 
 Funcionou! O programa escreveu o conteúdo de `B4na` e depois deletou o ficheiro do diretório.
+
+
+<img src="images/Task8_2.jpg" width="70%">
 
 ### Análise Detalhada:
 
@@ -355,7 +373,7 @@ Funcionou! O programa escreveu o conteúdo de `B4na` e depois deletou o ficheiro
 
 **`execve()`:** Substituir `system()` por `execve()` evita invocação de shell; argumentos são passados literalmente, prevenindo ataques de command-injection.
 
-<foto task="8">
+<img src="images/Task8_3.jpg" width="70%">
 
 ---
 
@@ -468,7 +486,7 @@ O teste demonstrou a vulnerabilidade de *capability leaking*: embora o processo 
 
 `setuid()` sozinho não basta; é preciso limpar todos os recursos privilegiados (fechar os FDs com `close()`) para garantir a segurança.
 
-<foto task="9">
+![Task 9](images/Task9_1.jpg)
 
 ---
 
