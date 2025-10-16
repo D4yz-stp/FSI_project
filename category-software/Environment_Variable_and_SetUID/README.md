@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This report documents the practical work carried out for the SEED Labs "Environment Variable and Set-UID Program" exercise. The lab's goal is to make visible what most programmers only assume: environment variables are not trivial metadata — they are live inputs that can change program behaviour, and when combined with privilege mechanisms such as Set-UID they can become attack vectors.
+This report documents the practical work we carried out for the SEED Labs "Environment Variable and Set-UID Program" exercise. The lab's goal is to make visible what most programmers only assume: environment variables are not trivial metadata — they are live inputs that can change program behaviour, and when combined with privilege mechanisms such as Set-UID they can become attack vectors.
 
 Using the provided SEED Ubuntu environment, we exercised the basic commands and APIs that propagate and expose environment state (`fork()`, `execve()`, `system()`), explored how the dynamic loader responds to `LD_*` variables, and demonstrated common pitfalls in privileged programs (PATH-based command substitution, misuse of `system()`, and capability/file-descriptor leaking).
 
@@ -10,13 +10,13 @@ The experiments were performed on a SEED Ubuntu VM (Ubuntu 20.04) supplied with 
 
 ## Setup
 
-Comecei por criar uma pasta partilhada no SeedLabs, colocada no diretório `/media`. De seguida executei `printenv PWD` para visualizar as variáveis globais no diretório inicial, mas quando executei o mesmo comando na pasta `/media/Environment_Variable_and_SetUID/Labsetup` não obtive o mesmo resultado.
+We started by creating a shared folder in SeedLabs, placed in the `/media` directory. Next, we executed `printenv PWD` to view the global variables in the initial directory, but when we executed the same command in the `/media/Environment_Variable_and_SetUID/Labsetup` folder, we did not get the same result.
 
 ---
 
 ## Task 1 - Manipulating Environment Variables
 
-**Objetivo:** Compreender como manipular variáveis de ambiente na shell.
+**Objective:** Understand how to manipulate environment variables in the shell.
 
 ### Key Observations:
 - Environment variables can be dynamically modified in the shell session
@@ -28,25 +28,25 @@ Comecei por criar uma pasta partilhada no SeedLabs, colocada no diretório `/med
 
 ## Task 2 - Inheriting Environment Variables
 
-**Objetivo:** Verificar se as variáveis de ambiente do processo pai são herdadas pelo processo filho após a chamada de `fork()`.
+**Objective:** Verify if the environment variables from the parent process are inherited by the child process after the `fork()` call.
 
-### Procedimento:
+### Procedure:
 
-Compilei o `myprintenv.c` com:
+We compiled `myprintenv.c` with:
 ```bash
 gcc myprintenv.c
 ./a.out > file
 ```
 
-Consegui então o retorno que havia tido quando fiz `printenv PWD` no diretório inicial.
+We then got the return we had when we did `printenv PWD` in the initial directory.
 
-Coloquei o `printenv()` do processo filho em comentário e descomentei o `printenv()` do processo pai. Pude reparar que os dois retornaram literalmente a mesma coisa quanto às variáveis de ambiente.
+We commented out the child process `printenv()` and uncommented the parent process `printenv()`. We could notice that both returned literally the same thing regarding environment variables.
 
 ![Task 2 - Part 1](images/Task2_1.png)
 
-### Resultado:
+### Result:
 
-As variáveis de ambiente incluíam:
+The environment variables included:
 ```
 XDG_VTNR=7
 XDG_SESSION_ID=c1
@@ -73,40 +73,40 @@ HOME=/home/seed
 
 ## Task 3 - Environment Variables and execve()
 
-**Objetivo:** Analisar o que acontece com as variáveis de ambiente quando um novo programa é executado com `execve()`.
+**Objective:** Analyze what happens to environment variables when a new program is executed with `execve()`.
 
 ![Task 3 - Part 1](images/Task3_1.png)
 
 ### Step 1
 
-Executei o ficheiro `myenv.c`:
+We executed the `myenv.c` file:
 ```bash
 gcc myenv.c
 ./a.out > file
 ```
 
-Obtive um ficheiro vazio.
+We got an empty file.
 
 ### Step 2
 
-Mudei a linha:
+We changed the line:
 ```c
 execve("/usr/bin/env", argv, NULL);
 ```
-para:
+to:
 ```c
 execve("/usr/bin/env", argv, environ);
 ```
 
-E executei os mesmos comandos.
+And executed the same commands.
 
 ### Step 3
 
-Notei que obtive literalmente as mesmas variáveis globais do processo pai (não houve criação de processo filho, pai é usado apenas como referência).
+We noticed that we got literally the same global variables from the parent process (there was no child process creation, parent is used only as a reference).
 
-### Conclusão:
+### Conclusion:
 
-O `execve()` substitui o programa atual sem criar um novo processo e apenas transmite as variáveis de ambiente se estas forem explicitamente passadas como argumento. Caso contrário, o novo programa é executado com um ambiente vazio.
+`execve()` replaces the current program without creating a new process and only transmits environment variables if they are explicitly passed as an argument. Otherwise, the new program is executed with an empty environment.
 
 ### Key Observations:
 - When `execve()` is called with the environment parameter set to `NULL`, the new program does not inherit any environment variables
@@ -119,7 +119,7 @@ O `execve()` substitui o programa atual sem criar um novo processo e apenas tran
 
 ## Task 4 - Environment Variables and system()
 
-**Objetivo:** Analisar o que acontece com as variáveis de ambiente quando um novo processo é executado através da função `system()`.
+**Objective:** Analyze what happens to environment variables when a new process is executed through the `system()` function.
 
 ```c
 #include <stdio.h>
@@ -132,15 +132,15 @@ int main()
 }
 ```
 
-Ao executar:
+When executing:
 ```bash
 gcc myenv.c -o myenvsys
 ./myenvsys > file
 ```
 
-### Conclusão:
+### Conclusion:
 
-A função `system()` não troca o programa que está rodando; em vez disso, ela cria um processo filho para correr um novo terminal (`/bin/sh`). Como `system()` usa internamente `execl()`, que por sua vez chama `execve()` com o mesmo conjunto de variáveis do processo pai, o processo filho herda automaticamente todas as variáveis de ambiente.
+The `system()` function does not swap the program that is running; instead, it creates a child process to run a new terminal (`/bin/sh`). Since `system()` internally uses `execl()`, which in turn calls `execve()` with the same set of variables from the parent process, the child process automatically inherits all environment variables.
 
 ### Key Observations:
 - `system()` executes a shell (`/bin/sh`) first, which inherits all environment variables from the calling process
@@ -153,7 +153,7 @@ A função `system()` não troca o programa que está rodando; em vez disso, ela
 
 ## Task 5 - Environment Variable and Set-UID Programs
 
-**Objetivo:** Analisar como as variáveis de ambiente são tratadas quando um programa Set-UID é executado.
+**Objective:** Analyze how environment variables are treated when a Set-UID program is executed.
 
 ### Step 1
 
@@ -174,7 +174,7 @@ int main()
 
 ### Step 2
 
-Compilação e configuração:
+Compilation and configuration:
 ```bash
 gcc foo.c -o foo
 sudo chown root foo
@@ -183,7 +183,7 @@ sudo chmod 4755 foo
 
 ### Step 3
 
-Definição de variáveis:
+Variable definition:
 ```bash
 export PATH=/home/seed/bin:$PATH
 export LD_LIBRARY_PATH=/home/seed/lib
@@ -191,13 +191,13 @@ export MY_VAR="banaNa"
 ./foo > file
 ```
 
-### Resultado:
+### Result:
 
-Foi possível ver que algumas variáveis definidas pelo usuário aparecem com os valores atualizados no file. No teste, vi variáveis como `MY_VAR`, `LD_LIBRARY_PATH`, e `PATH` aparecerem no programa Set-UID.
+We could see that some user-defined variables appear with updated values in the file. In the test, we saw variables like `MY_VAR`, `LD_LIBRARY_PATH`, and `PATH` appear in the Set-UID program.
 
-### Observação Importante:
+### Important Observation:
 
-Descobri que esse comportamento não é sempre padrão. Em muitas distribuições/configurações, variáveis potencialmente perigosas são filtradas por razões de segurança. O resultado pode variar conforme a versão da libc, flags do kernel (securebits), políticas do sudo, ou como o binário foi invocado.
+We discovered that this behavior is not always standard. In many distributions/configurations, potentially dangerous variables are filtered for security reasons. The result may vary depending on the libc version, kernel flags (securebits), sudo policies, or how the binary was invoked.
 
 ### Key Observations:
 - Only some variables like `SHELL`, `HOME`, `PWD`, `LOGNAME`, `LANG`, and `PATH` appear in the program output
@@ -211,9 +211,9 @@ Descobri que esse comportamento não é sempre padrão. Em muitas distribuiçõe
 
 ## Task 6 - The PATH Environment Variable and Set-UID Programs
 
-**Objetivo:** Testar se um programa Set-UID que usa `system("ls")` pode ser forçado a executar um ficheiro malicioso controlado pelo utilizador.
+**Objective:** Test if a Set-UID program that uses `system("ls")` can be forced to execute a malicious file controlled by the user.
 
-### Código Vítima (`seis.c`):
+### Victim Code (`seis.c`):
 ```c
 int main()
 {
@@ -222,7 +222,7 @@ int main()
 }
 ```
 
-### Código Malicioso (`bad_code.c`):
+### Malicious Code (`bad_code.c`):
 ```c
 int main() {
     printf("Muh ha ha ha ha!!\n");
@@ -231,34 +231,34 @@ int main() {
 }
 ```
 
-### Procedimento:
+### Procedure:
 
-1. Compilei o `seis.c` e transformei-o em Set-UID root
-2. Compilei o código malicioso como `ls`:
+1. We compiled `seis.c` and made it Set-UID root
+2. We compiled the malicious code as `ls`:
 ```bash
 gcc -o ls bad_code.c
 export PATH=/home/seed:$PATH
 ./seis
 ```
 
-### Resultado com dash:
+### Result with dash:
 
 ```
 [10/13/25]seed@VM:~/Documents$ ./seis
 Muh ha ha ha ha!!
 ```
 
-O binário malicioso foi executado, mas **não** apareceu a mensagem "I have root privilege!". Isto indica que o processo malicioso não correu com EUID = 0.
+The malicious binary was executed, but the message "I have root privilege!" **did not** appear. This indicates that the malicious process did not run with EUID = 0.
 
 <img src="images/Task6_1.jpg" width="70%">
 
-### Razões prováveis:
-- O shell chamado por `system()` (dash) pode ter revogado o EUID como medida de segurança
-- Alguns filesystems (ex: vboxsf) não respeitam o bit set-uid
+### Probable reasons:
+- The shell called by `system()` (dash) may have revoked the EUID as a security measure
+- Some filesystems (e.g., vboxsf) do not respect the set-uid bit
 
-### Resultado com zsh (lab-only):
+### Result with zsh (lab-only):
 
-Após apontar `/bin/sh` para `zsh` temporariamente, o comando `./atc6` produziu `whoami: root` — o código malicioso `~/ls` executou com privilégios root (escalação bem-sucedida).
+After temporarily pointing `/bin/sh` to `zsh`, the `./atc6` command produced `whoami: root` — the malicious code `~/ls` executed with root privileges (successful escalation).
 
 <img src="images/Task6_2.jpg" width="70%">
 
@@ -281,11 +281,11 @@ Após apontar `/bin/sh` para `zsh` temporariamente, o comando `./atc6` produziu 
 
 ## Task 7 - The LD_PRELOAD Environment Variable and Set-UID Programs
 
-**Objetivo:** Explorar como `LD_PRELOAD` afeta programas regulares e Set-UID.
+**Objective:** Explore how `LD_PRELOAD` affects regular and Set-UID programs.
 
 <img src="images/Task7_1.jpg" width="70%">
 
-### Resultados:
+### Results:
 
 1. **Regular program, normal user:** `LD_PRELOAD` works; `mylib.so` overrides `sleep()`; Output: "I am not sleeping!"
 
@@ -297,7 +297,7 @@ Após apontar `/bin/sh` para `zsh` temporariamente, o comando `./atc6` produziu 
    
 <img src="images/Task7_2.jpg" width="70%">
 
-### Conclusão:
+### Conclusion:
 
 `LD_PRELOAD` is ignored for Set-UID programs unless run by the file owner (or root) to prevent privilege escalation.
 
@@ -308,9 +308,9 @@ Após apontar `/bin/sh` para `zsh` temporariamente, o comando `./atc6` produziu 
 
 ## Task 8 - Invoking External Programs Using system() versus execve()
 
-**Objetivo:** Compreender os problemas de segurança do `system()` em programas Set-UID, especialmente a exploração via shell metacharacters.
+**Objective:** Understand the security problems of `system()` in Set-UID programs, especially exploitation via shell metacharacters.
 
-### Código:
+### Code:
 ```c
 #include <unistd.h>
 #include <stdio.h>
@@ -340,9 +340,9 @@ int main(int argc, char *argv[])
 }
 ```
 
-### Procedimento:
+### Procedure:
 
-Compilei o `catall.c`:
+We compiled `catall.c`:
 ```bash
 gcc catall.c -o catall
 sudo chown root catall
@@ -351,27 +351,27 @@ sudo chmod 4755 catall
 
 <img src="images/Task8_1.jpg" width="70%">
 
-Criei um ficheiro de texto `B4na` com conteúdo de teste. Explorei a vulnerabilidade com:
+We created a text file `B4na` with test content. We exploited the vulnerability with:
 ```bash
 ./catall "B4na; /bin/rm -f B4na"
 ```
 
-### Resultado:
+### Result:
 
-Funcionou! O programa escreveu o conteúdo de `B4na` e depois deletou o ficheiro do diretório.
+It worked! The program wrote the contents of `B4na` and then deleted the file from the directory.
 
 
 <img src="images/Task8_2.jpg" width="70%">
 
-### Análise Detalhada:
+### Detailed Analysis:
 
-**Setup:** Criámos `/etc/zzz` (root-owned, 0644) e construímos `catall` como setuid-root.
+**Setup:** We created `/etc/zzz` (root-owned, 0644) and built `catall` as setuid-root.
 
-**`system()` + dash:** Quando `catall` usou `system()` e `/bin/sh` era dash, a shell revogou privilégios efetivos — `catall` não conseguiu ler o ficheiro root-only e metacaracteres não executaram.
+**`system()` + dash:** When `catall` used `system()` and `/bin/sh` was dash, the shell revoked effective privileges — `catall` could not read the root-only file and metacharacters did not execute.
 
-**`system()` + zsh:** Após apontar `/bin/sh` para zsh temporariamente, a shell não revogou privilégios, permitindo que `system()` executasse comandos arbitrários como root.
+**`system()` + zsh:** After temporarily pointing `/bin/sh` to zsh, the shell did not revoke privileges, allowing `system()` to execute arbitrary commands as root.
 
-**`execve()`:** Substituir `system()` por `execve()` evita invocação de shell; argumentos são passados literalmente, prevenindo ataques de command-injection.
+**`execve()`:** Replacing `system()` with `execve()` avoids shell invocation; arguments are passed literally, preventing command-injection attacks.
 
 <img src="images/Task8_3.jpg" width="70%">
 
@@ -379,9 +379,9 @@ Funcionou! O programa escreveu o conteúdo de `B4na` e depois deletou o ficheiro
 
 ## Task 9 - Capability Leaking
 
-**Objetivo:** Testar a vulnerabilidade de *capability leaking* — quando um programa Set-UID revoga o UID mas ainda deixa recursos privilegiados (file descriptors) acessíveis.
+**Objective:** Test the *capability leaking* vulnerability — when a Set-UID program revokes the UID but still leaves privileged resources (file descriptors) accessible.
 
-### Código:
+### Code:
 ```c
 #include <unistd.h>
 #include <stdio.h>
@@ -416,26 +416,26 @@ void main()
 }
 ```
 
-### Procedimento:
+### Procedure:
 
-Compilação e configuração:
+Compilation and configuration:
 ```bash
 gcc cap_leak.c -o cap_leak
 sudo chown root cap_leak
 sudo chmod 4755 cap_leak
 ```
 
-Criação do ficheiro teste:
+Test file creation:
 ```bash
 sudo touch /etc/zzz
 ```
 
-Execução:
+Execution:
 ```bash
 ./cap_leak
 ```
 
-### Resultado:
+### Result:
 
 ```
 [10/13/25]seed@VM:~/Documents$ ./cap_leak
@@ -443,48 +443,48 @@ fd is 3
 $
 ```
 
-**Nota:** O `3` é porque o sistema já usa 0 (stdin), 1 (stdout), 2 (stderr). O primeiro `open()` retorna o próximo FD livre, normalmente 3.
+**Note:** The `3` is because the system already uses 0 (stdin), 1 (stdout), 2 (stderr). The first `open()` returns the next free FD, normally 3.
 
-### Exploração:
+### Exploitation:
 
-Tentei:
+We tried:
 ```bash
 rm -f /etc/zzz
 ```
 
-Resultado:
+Result:
 ```
 $ rm -f /etc/zzz
 rm: cannot remove '/etc/zzz': Permission denied
 ```
 
-Mas usando o fd diretamente:
+But using the fd directly:
 ```bash
-cat 'linha maliciosa\n' > &3
+cat 'malicious line\n' > &3
 ```
 
-Verificação:
+Verification:
 ```bash
 $ sudo cat /etc/zzz
-linha maliciosa
-linha maliciosa
+malicious line
+malicious line
 $
 ```
 
-### Conclusão:
+### Conclusion:
 
-Apesar de não ter autorização de root em vários comandos, consegui adicionar informações no ficheiro `/etc/zzz` (que é do root com permissão específica) usando o endereço do fd. O novo programa herdou esse descritor do programa inicial.
+Despite not having root authorization in various commands, we managed to add information to the `/etc/zzz` file (which belongs to root with specific permission) using the fd address. The new program inherited this descriptor from the initial program.
 
-O teste demonstrou a vulnerabilidade de *capability leaking*: embora o processo tenha revogado o root com `setuid(getuid())`, ele deixou para trás o descritor de ficheiro (FD) aberto para `/etc/zzz`. O shell que o programa executou simplesmente herdou esse FD "vazado", permitindo escrever no ficheiro protegido.
+The test demonstrated the *capability leaking* vulnerability: although the process revoked root with `setuid(getuid())`, it left behind the open file descriptor (FD) for `/etc/zzz`. The shell that the program executed simply inherited this "leaked" FD, allowing writing to the protected file.
 
 ### Evidence:
 - **Setup:** compiled `cap_leak`, set owner to root and mode 4755, created `/etc/zzz` owned by root (0644)
 - **Exploit:** running `./cap_leak` printed `fd is 3`; inside the spawned shell `printf 'attacker wrote line\n' >&3` wrote through the inherited privileged descriptor
 - **Evidence:** file size and metadata changed; `cat /etc/zzz` contains the appended line, proving capability leaking
 
-### Mitigação:
+### Mitigation:
 
-`setuid()` sozinho não basta; é preciso limpar todos os recursos privilegiados (fechar os FDs com `close()`) para garantir a segurança.
+`setuid()` alone is not enough; it is necessary to clean all privileged resources (close the FDs with `close()`) to ensure security.
 
 ![Task 9](images/Task9_1.jpg)
 
@@ -492,19 +492,19 @@ O teste demonstrou a vulnerabilidade de *capability leaking*: embora o processo 
 
 ## Conclusion
 
-Este laboratório demonstrou de forma prática como variáveis de ambiente e programas Set-UID podem criar vulnerabilidades de segurança graves quando não são geridos adequadamente. As principais lições incluem:
+This laboratory demonstrated in a practical way how environment variables and Set-UID programs can create serious security vulnerabilities when not properly managed. The main lessons include:
 
-1. **Herança de Ambiente:** Processos filho herdam variáveis de ambiente, mas o comportamento varia entre `fork()`, `execve()` e `system()`
-2. **Set-UID e PATH:** Programas Set-UID que usam `system()` podem ser explorados através de manipulação do PATH
-3. **LD_PRELOAD:** É ignorado para programas Set-UID (exceto pelo owner/root) para prevenir escalação de privilégios
-4. **system() vs execve():** `system()` invoca uma shell e é vulnerável a command injection; `execve()` é mais seguro
-5. **Capability Leaking:** Revogar privilégios com `setuid()` não é suficiente se file descriptors privilegiados não forem fechados
+1. **Environment Inheritance:** Child processes inherit environment variables, but behavior varies between `fork()`, `execve()`, and `system()`
+2. **Set-UID and PATH:** Set-UID programs that use `system()` can be exploited through PATH manipulation
+3. **LD_PRELOAD:** It is ignored for Set-UID programs (except by owner/root) to prevent privilege escalation
+4. **system() vs execve():** `system()` invokes a shell and is vulnerable to command injection; `execve()` is safer
+5. **Capability Leaking:** Revoking privileges with `setuid()` is not enough if privileged file descriptors are not closed
 
-### Recomendações de Segurança:
-- Evitar `system()` em código privilegiado
-- Usar `execve()` com caminhos absolutos
-- Sanitizar ou resetar PATH e unset `LD_*`
-- Fechar todos os file descriptors privilegiados antes de revogar privilégios
-- Evitar binários setuid quando possível
+### Security Recommendations:
+- Avoid `system()` in privileged code
+- Use `execve()` with absolute paths
+- Sanitize or reset PATH and unset `LD_*`
+- Close all privileged file descriptors before revoking privileges
+- Avoid setuid binaries when possible
 
 All work referenced the SEED Lab materials by Wenliang Du and used the supplied code examples.
