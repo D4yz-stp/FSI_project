@@ -57,3 +57,25 @@ I set the start to 32 because I wanted a generous NOP area before the shellcode.
 The ret should point into the NOP sled, ideally a few bytes before or at the start of the shellcode. I calculated it as the buffer base plus 32. For example, if the buffer begins at 0xbfffe65c, then ret = 0xbfffe65c + 32 = 0xbfffe67c.
 
 Finally, I set the offset to 104 because the saved return address lies immediately after the 100‑byte buffer and the 4‑byte saved EBP. Therefore, overwriting the return address requires writing at byte position 100 + 4 = 104 in the payload.
+
+Then used the command `python3 exploit.py` to generate the contents for badfile.
+
+And tried `./stack-L1` to launch the attack, but we got an error "Input size: 517 Segmentation fault"
+
+Decided to not give up, i did a diagnoses, and did these commans on the dbb terminal to see what is going on
+
+1. b bof
+2. run < badfile
+3. next
+4. next
+5. p/x &buffer
+6. p/x $ebp
+7. x/40bx $ebp-120
+8. x/8bx $ebp+4
+9. info registers
+10. x/i 0xbfffe67c
+
+After getting the analysis of some IA, i could see that "0xbfffe6cc - 0xbfffe65c = 0x70 = 112" So the offset i was using was wrong, its not 104, it should be 112, but...
+It did not work also, so i changed the start to 40, 60 but i would still not work and give the same error message
+
+Frustated with this, i was doing trying to see some debugging on videos and chatghpt for more time, but at the end nothing worked
