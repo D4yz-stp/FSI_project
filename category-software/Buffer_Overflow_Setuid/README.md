@@ -32,4 +32,28 @@ We have only a few differences, for example, when i used `b bof` in the gdb-peda
 
 ### 5.2
 
+The objective is to complete the provided `exploit.py` skeleton to generate a badfile containing a NOP sled, shellcode, and the correct return‑address/offsets so the buffer‑overflow can be exploited.
 
+So, we needed to change the shellcode to an x86 execve("/bin/sh") payload, set start to the index where the shellcode sits in the payload, set ret to an address inside the buffer (preferably the NOP‑sled), and set offset to the byte position in the file where the saved return‑address is overwritten in `exploit.py`.
+
+So i entered in the binary debugger with `b bof`, and did these things in order
+- run
+- next
+- next
+- p &buffer
+
+So i could get the buffer address that is "0xbfffe65c", we will use this later.
+
+I used a standard 32‑bit execve('/bin/sh') shellcode because it’s compact and avoids null bytes (so strcpy won’t truncate it). The shellcode pushes '/bin//sh' onto the stack, sets ebx to point to the string and ecx/edx to NULL, then issues execve via int 0x80. It is placed inside the payload after a NOP sled so the return address can land anywhere in the sled and still reach the shellcode
+```c
+shellcode = (
+    b"\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e"
+    b"\x89\xe3\x50\x53\x89\xe1\x99\xb0\x0b\xcd\x80"
+)
+```
+
+I set the start to 32 because I wanted a generous NOP area before the shellcode. The start indicates the byte position in the payload where the shellcode begins. Reserving about 32 bytes of 0x90 provides slack in case the jump lands slightly before the payload.
+
+The ret should point into the NOP sled, ideally a few bytes before or at the start of the shellcode. I calculated it as the buffer base plus 32. For example, if the buffer begins at 0xbfffe65c, then ret = 0xbfffe65c + 32 = 0xbfffe67c.
+
+Finally, I set the offset to 104 because the saved return address lies immediately after the 100‑byte buffer and the 4‑byte saved EBP. Therefore, overwriting the return address requires writing at byte position 100 + 4 = 104 in the payload.
