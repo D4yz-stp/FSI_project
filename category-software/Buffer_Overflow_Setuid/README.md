@@ -4,11 +4,9 @@ I started by using these codes:
 1. `$ sudo sysctl -w kernel.randomize_va_space=0`
 2. `$ sudo ln -sf /bin/zsh /bin/sh`
 
-Where the 1. is to <....>
-And the 2. to <...>
-So pretty much the will allow me to <...>
-
-
+Where the 1. is to temporarily turn off ASLR so stack addresses stay the same between runs, making debugging and offset hunting reliable.
+And the 2. points `/bin/sh` to zsh so any spawned shell is interactive and easier to use.
+Together they make exploit testing more reproducible basically
 
 ## 5
 
